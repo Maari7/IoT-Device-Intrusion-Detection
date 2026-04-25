@@ -1,0 +1,13 @@
+split:
+  test_size: 0.20
+  val_size: 0.10
+  random_state: 42
+
+data:
+  chunksize: 200000
+  max_rows_per_file: null
+
+preprocessing:
+  impute_strategy: median
+  clip_quantiles: [0.001, 0.999]
+  scale_features: true

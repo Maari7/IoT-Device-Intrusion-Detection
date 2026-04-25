@@ -1,0 +1,14 @@
+drift:
+  data:
+    psi_threshold: 0.2
+    ks_pvalue_threshold: 0.05
+    drifted_feature_ratio_threshold: 0.25
+    min_reference_rows: 100
+  concept:
+    f1_drop_threshold: 0.05
+    auroc_drop_threshold: 0.05
+    confidence_shift_threshold: 0.10
+  retraining:
+    enabled: true
+    auto_trigger: false
+    min_severity: high

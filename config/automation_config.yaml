@@ -1,0 +1,27 @@
+automation:
+  fail_fast: true
+  python_executable: python
+  report_path: artifacts/research/orchestration/automation_report.json
+
+paths:
+  config: config/config.yaml
+  model_config: config/model_config.yaml
+  drift_config: config/drift_config.yaml
+  inference_config: config/inference_config.yaml
+
+commands:
+  orchestration_script: scripts/run_orchestration.py
+  drift_script: scripts/run_drift_check.py
+  api_script: scripts/run_api.py
+
+profiles:
+  quick:
+    run_drift: false
+    run_mlflow: false
+    run_exp2: false
+    run_deployment: false
+  full:
+    run_drift: true
+    run_mlflow: true
+    run_exp2: false
+    run_deployment: true

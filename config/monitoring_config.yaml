@@ -1,0 +1,18 @@
+monitoring:
+  service_name: hx-idl-hybrid
+  request_latency_slo_ms:
+    p50: 20
+    p95: 50
+    p99: 100
+  throughput_rps_target: 1000
+  error_rate_threshold: 0.02
+  confidence_threshold: 0.55
+  system_cpu_threshold: 85
+  system_memory_threshold: 85
+  system_disk_threshold: 90
+  health_check_interval_seconds: 60
+
+alerts:
+  channel: console
+  severity_levels: [info, warning, critical]
+  notify_on: [performance_degradation, data_drift, concept_drift, health_failure]

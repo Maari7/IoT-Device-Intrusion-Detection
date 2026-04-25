@@ -1,0 +1,53 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# ML / training outputs
+mlruns/
+artifacts/
+monitoring/
+cache/
+
+# Data and generated datasets
+# Keep raw project data out of git unless explicitly needed.
+data/
+
+# DVC and local pipeline state
+.dvc/cache/
+.dvc/tmp/
+.dvc/state
+
+# Local archives / exports
+*.zip
+*.tar
+*.gz
+*.rar

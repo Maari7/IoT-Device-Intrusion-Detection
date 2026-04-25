@@ -1,0 +1,113 @@
+stages:
+  phase1_data_pipeline:
+    cmd: python -m src.data.preprocessor --config config/config.yaml
+    deps:
+      - config/config.yaml
+      - params.yaml
+      - data/schema/data_schema.py
+      - src/data/loader.py
+      - src/data/validator.py
+      - src/data/splitter.py
+      - src/data/preprocessor.py
+      - data/Danmini_Doorbell/benign_traffic.csv
+      - data/Danmini_Doorbell/gafgyt_attacks
+      - data/Danmini_Doorbell/mirai_attacks
+    params:
+      - split
+      - data
+      - preprocessing
+    outs:
+      - data/raw/combined_raw.parquet
+      - data/processed/train.parquet
+      - data/processed/val.parquet
+      - data/processed/test.parquet
+      - data/features/preprocessor.joblib
+    metrics:
+      - data/processed/phase1_stats.json
+      - data/processed/data_quality_report.json
+
+  phase2_hybrid_training:
+    cmd: python scripts/train_model.py --config config/config.yaml --model-config config/model_config.yaml --run-name phase2_hybrid
+    deps:
+      - config/config.yaml
+      - config/model_config.yaml
+      - src/research
+      - src/evaluation
+      - src/registry
+      - src/training/hybrid_trainer.py
+      - scripts/train_model.py
+      - data/processed/train.parquet
+      - data/processed/val.parquet
+      - data/processed/test.parquet
+    outs:
+      - artifacts/research/models
+      - artifacts/research/reports
+
+  phase3_experiment_exp1:
+    cmd: python experiments/exp1_ae_vs_baseline.py --config config/config.yaml --model-config config/model_config.yaml
+    deps:
+      - experiments/exp1_ae_vs_baseline.py
+      - config/config.yaml
+      - config/model_config.yaml
+      - src/research
+      - src/evaluation
+      - src/registry
+      - data/processed/train.parquet
+      - data/processed/val.parquet
+      - data/processed/test.parquet
+    outs:
+      - artifacts/research/reports/exp1_results.json
+
+  phase3_experiment_exp2:
+    cmd: python experiments/exp2_loao.py --config config/config.yaml --model-config config/model_config.yaml
+    deps:
+      - experiments/exp2_loao.py
+      - config/config.yaml
+      - config/model_config.yaml
+      - src/research
+      - src/training/hybrid_trainer.py
+      - data/processed/train.parquet
+      - data/processed/val.parquet
+      - data/processed/test.parquet
+    outs:
+      - artifacts/research/reports/exp2_loao_results.json
+
+  phase4_registry_promotion:
+    cmd: python scripts/promote_model.py --config config/config.yaml --model-config config/model_config.yaml
+    deps:
+      - scripts/promote_model.py
+      - config/config.yaml
+      - config/model_config.yaml
+      - src/registry
+      - artifacts/research/reports/exp1_results.json
+      - artifacts/research/reports/exp2_loao_results.json
+    outs:
+      - artifacts/research/registry
+
+  phase6_monitoring_drift:
+    cmd: python scripts/run_drift_check.py --config config/drift_config.yaml --reference-data data/processed/train.parquet --current-data data/processed/test.parquet --reference-metrics artifacts/research/reports/exp1_results.json --current-metrics artifacts/research/reports/exp2_loao_results.json
+    deps:
+      - scripts/run_drift_check.py
+      - config/drift_config.yaml
+      - data/processed/train.parquet
+      - data/processed/test.parquet
+      - artifacts/research/reports/exp1_results.json
+      - artifacts/research/reports/exp2_loao_results.json
+      - src/drift
+      - src/monitoring
+    outs:
+      - artifacts/research/monitoring
+
+  phase7_orchestration:
+    cmd: python scripts/run_orchestration.py --config config/config.yaml --model-config config/model_config.yaml --run-name phase7_orchestration
+    deps:
+      - scripts/run_orchestration.py
+      - pipelines
+      - src/utils
+      - config/config.yaml
+      - config/model_config.yaml
+      - config/drift_config.yaml
+      - artifacts/research/reports/exp1_results.json
+      - artifacts/research/reports/exp2_loao_results.json
+    outs:
+      - artifacts/research/orchestration

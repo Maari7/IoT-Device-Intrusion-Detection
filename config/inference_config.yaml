@@ -1,0 +1,24 @@
+server:
+  host: 0.0.0.0
+  port: 8000
+  title: HX-IDL Hybrid Inference API
+  version: 1.0.0
+
+artifacts:
+  preprocessor_path: data/features/preprocessor.joblib
+  model_dir: artifacts/research/models
+  fusion_model: fusion_model.joblib
+  autoencoder_model: aga_autoencoder.pt
+  shap_weights: shap_feature_weights.json
+  baseline_model: xgboost_baseline.joblib
+  dual_consistency: dual_consistency.json
+
+prediction:
+  decision_threshold: 0.5
+  top_k_features: 10
+  max_batch_size: 1024
+  batch_timeout_seconds: 5
+
+monitoring:
+  metrics_enabled: true
+  log_requests: true

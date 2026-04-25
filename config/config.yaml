@@ -1,0 +1,45 @@
+project:
+  name: hx-idl-proj
+  seed: 42
+
+paths:
+  dataset_root: data/Danmini_Doorbell
+  benign_file: data/Danmini_Doorbell/benign_traffic.csv
+  attack_dirs:
+    - data/Danmini_Doorbell/gafgyt_attacks
+    - data/Danmini_Doorbell/mirai_attacks
+  raw_cache: data/raw/combined_raw.parquet
+  processed_dir: data/processed
+  features_dir: data/features
+
+data:
+  chunksize: 200000
+  cache_enabled: true
+  max_rows_per_file: null
+  label_column: label
+  family_column: attack_family
+  source_column: source_file
+
+preprocessing:
+  impute_strategy: median
+  clip_quantiles: [0.001, 0.999]
+  scale_features: true
+
+split:
+  test_size: 0.20
+  val_size: 0.10
+  random_state: 42
+  stratify_column: label
+
+output:
+  train_file: train.parquet
+  val_file: val.parquet
+  test_file: test.parquet
+  preprocessor_file: preprocessor.joblib
+
+logging:
+  level: INFO
+
+versioning:
+  dvc_remote_name: storage
+  dvc_remote_url: null

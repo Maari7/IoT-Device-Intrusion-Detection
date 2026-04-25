@@ -1,0 +1,66 @@
+training:
+  output_dir: artifacts/research
+
+mlflow:
+  tracking_uri: file:./mlruns
+  experiment_name: hx-idl-hybrid
+
+models:
+  xgboost:
+    params:
+      n_estimators: 300
+      max_depth: 8
+      learning_rate: 0.05
+      subsample: 0.8
+      colsample_bytree: 0.8
+      reg_alpha: 0.0
+      reg_lambda: 1.0
+      n_jobs: -1
+      tree_method: hist
+      objective: multi:softprob
+      eval_metric: mlogloss
+
+  shap_weighting:
+    surrogate_params:
+      n_estimators: 180
+      max_depth: 6
+      learning_rate: 0.05
+      subsample: 0.9
+      colsample_bytree: 0.9
+      n_jobs: -1
+      tree_method: hist
+      objective: multi:softprob
+      eval_metric: mlogloss
+
+  autoencoder:
+    params:
+      hidden_dims: [128, 64]
+      latent_dim: 32
+      batch_size: 256
+      epochs: 18
+      learning_rate: 0.05
+      weight_decay: 0.0001
+      device: cpu
+
+  dual_consistency:
+    alpha: 0.6
+    beta: 0.4
+    threshold_quantile: 0.95
+
+  fusion:
+    params:
+      c: 1.0
+      max_iter: 1000
+      class_weight: balanced
+      solver: lbfgs
+      random_state: 42
+
+registry:
+  version_namespace: hybrid
+  output_dir: artifacts/research/registry
+  thresholds:
+    min_fusion_f1: 0.70
+    min_fusion_auroc: 0.70
+    min_loao_mean_f1: 0.65
+    min_loao_min_f1: 0.50
+    min_fusion_over_baseline_gap: 0.02
