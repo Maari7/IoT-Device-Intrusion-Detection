@@ -8,9 +8,16 @@ from pathlib import Path
 from typing import Dict, List
 
 import pandas as pd
-from pandera.errors import SchemaErrors
 
-from data.schema.data_schema import IoTDatasetSchema, SchemaSettings
+try:
+    from pandera.errors import SchemaErrors
+    from data.schema.data_schema import IoTDatasetSchema, SchemaSettings
+    _PANDERA_AVAILABLE = True
+except Exception:  # pragma: no cover - optional dependency fallback
+    SchemaErrors = Exception
+    IoTDatasetSchema = None
+    SchemaSettings = None
+    _PANDERA_AVAILABLE = False
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,15 +34,25 @@ class DataValidator:
         self.family_column = data_cfg["family_column"]
         self.source_column = data_cfg["source_column"]
 
-        feature_columns = IoTDatasetSchema.infer_feature_columns(paths_cfg["benign_file"])
-        self.schema = IoTDatasetSchema(
-            feature_columns=feature_columns,
-            settings=SchemaSettings(
-                label_column=self.label_column,
-                family_column=self.family_column,
-                source_column=self.source_column,
-            ),
-        )
+        self.schema = None
+        self.feature_columns: List[str] = []
+
+        if _PANDERA_AVAILABLE and IoTDatasetSchema is not None and SchemaSettings is not None:
+            feature_columns = IoTDatasetSchema.infer_feature_columns(paths_cfg["benign_file"])
+            self.schema = IoTDatasetSchema(
+                feature_columns=feature_columns,
+                settings=SchemaSettings(
+                    label_column=self.label_column,
+                    family_column=self.family_column,
+                    source_column=self.source_column,
+                ),
+            )
+            self.feature_columns = list(feature_columns)
+        else:
+            LOGGER.warning("Pandera is not available; using lightweight validator fallback")
+            benign_path = Path(paths_cfg["benign_file"])
+            if benign_path.exists():
+                self.feature_columns = list(pd.read_csv(benign_path, nrows=0).columns)
 
     def validate(self, frame: pd.DataFrame) -> pd.DataFrame:
         """Validates a labeled DataFrame and raises on schema mismatch."""
@@ -45,11 +62,19 @@ class DataValidator:
             duplicated = frame.columns[frame.columns.duplicated()].tolist()
             raise ValueError(f"Duplicate columns found: {duplicated}")
 
-        try:
-            validated = self.schema.validate_labeled(frame)
-        except SchemaErrors as exc:
-            LOGGER.error("Schema validation failed with %d failure cases", len(exc.failure_cases))
-            raise
+        required_columns = [self.label_column, self.family_column, self.source_column]
+        missing_required = [c for c in required_columns if c not in frame.columns]
+        if missing_required:
+            raise ValueError(f"Missing required columns: {missing_required}")
+
+        if self.schema is not None:
+            try:
+                validated = self.schema.validate_labeled(frame)
+            except SchemaErrors as exc:
+                LOGGER.error("Schema validation failed with %d failure cases", len(exc.failure_cases))
+                raise
+        else:
+            validated = frame.copy()
 
         if validated[self.label_column].isna().any():
             raise ValueError("Label column contains null values after validation")
@@ -58,7 +83,10 @@ class DataValidator:
 
     def quality_report(self, frame: pd.DataFrame) -> Dict:
         """Builds a compact quality report for traceability."""
-        feature_cols: List[str] = self.schema.feature_columns
+        feature_cols: List[str] = self.feature_columns
+        if not feature_cols:
+            metadata = {self.label_column, self.family_column, self.source_column, "label_id"}
+            feature_cols = [c for c in frame.columns if c not in metadata]
         numeric_frame = frame[feature_cols]
 
         report = {
