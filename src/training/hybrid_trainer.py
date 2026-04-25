@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 from src.evaluation.evaluator import HybridEvaluator
 from src.evaluation.reports import build_markdown_report
@@ -224,6 +225,24 @@ class HybridTrainingOrchestrator:
             joblib.dump(fusion, fusion_path)
         fusion_test_proba = fusion.predict_proba(fusion_test_matrix)[:, 1]
         fusion_test_pred = fusion.predict(fusion_test_matrix)
+
+        metrics = {
+            "accuracy": float(accuracy_score(y_test_binary, fusion_test_pred)),
+            "precision": float(precision_score(y_test_binary, fusion_test_pred, zero_division=0)),
+            "recall": float(recall_score(y_test_binary, fusion_test_pred, zero_division=0)),
+            "f1_score": float(f1_score(y_test_binary, fusion_test_pred, zero_division=0)),
+        }
+
+        print("\n🔥 MODEL PERFORMANCE")
+        for key, value in metrics.items():
+            print(f"{key.upper()}: {value:.4f}")
+
+        artifacts_dir = Path("artifacts")
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        (artifacts_dir / "metrics.json").write_text(json.dumps(metrics, indent=4), encoding="utf-8")
+
+        cm = confusion_matrix(y_test_binary, fusion_test_pred)
+        np.save(artifacts_dir / "confusion_matrix.npy", cm)
 
         baseline_pred_test = baseline_clf.predict(x_test)
         baseline_proba_test = baseline_clf.predict_proba(x_test)
