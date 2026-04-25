@@ -13,13 +13,13 @@ paths:
   features_dir: data/features
 
 data:
-  chunksize: 200000
+  chunksize: 50000
   cache_enabled: true
   max_rows_per_file: null
-  max_total_rows: 15000
-  max_feature_columns: 30
+  max_total_rows: 10000
+  max_feature_columns: 25
   label_column: label
-  family_column: attack_family
+  family_column: attack_family   # only if you created it in code
   source_column: source_file
 
 preprocessing:
