@@ -87,12 +87,17 @@ class DataValidator:
         if not feature_cols:
             metadata = {self.label_column, self.family_column, self.source_column, "label_id"}
             feature_cols = [c for c in frame.columns if c not in metadata]
-        numeric_frame = frame[feature_cols]
+
+        available_cols = [col for col in feature_cols if col in frame.columns]
+        if len(available_cols) == 0:
+            raise ValueError("No valid feature columns found in dataset")
+
+        numeric_frame = frame[available_cols]
 
         report = {
             "rows": int(len(frame)),
             "columns": int(frame.shape[1]),
-            "feature_columns": len(feature_cols),
+            "feature_columns": len(available_cols),
             "missing_ratio": float(numeric_frame.isna().mean().mean()),
             "label_distribution": frame[self.label_column].value_counts(dropna=False).to_dict(),
             "family_distribution": frame[self.family_column].value_counts(dropna=False).to_dict(),
