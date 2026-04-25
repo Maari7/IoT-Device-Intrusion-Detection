@@ -10,7 +10,7 @@ from typing import Dict, List
 import pandas as pd
 from pandera.errors import SchemaErrors
 
-from data.schema.data_schema import IoTDatasetSchema, SchemaSettings
+from src.schema.data_schema import IoTDatasetSchema, SchemaSettings
 
 LOGGER = logging.getLogger(__name__)
 
