@@ -17,7 +17,6 @@ from sklearn.preprocessing import LabelEncoder
 from src.evaluation.evaluator import HybridEvaluator
 from src.evaluation.reports import build_markdown_report
 from src.evaluation.visualizer import save_binary_roc
-from src.registry.mlflow_registry import MLflowRegistry
 from src.research.autoencoder import AttributionGuidedAutoencoder
 from src.research.dual_consistency import DualConsistencyScorer
 from src.research.fusion import FusionModel
@@ -304,23 +303,7 @@ class HybridTrainingOrchestrator:
         exp1_path.write_text(json.dumps(exp1_payload, indent=2), encoding="utf-8")
 
         if enable_mlflow:
-            mlflow_cfg = self.model_config.get("mlflow", {})
-            tracking_uri = mlflow_cfg.get("tracking_uri", "file:./mlruns")
-            experiment_name = mlflow_cfg.get("experiment_name", "hx-idl-hybrid")
-            registry = MLflowRegistry(tracking_uri=tracking_uri, experiment_name=experiment_name)
-            with registry.run(run_name=run_name):
-                registry.log_params(
-                    {
-                        "pipeline": "xgboost_shap_aga_fusion",
-                        "seed": int(self.config.get("project", {}).get("seed", 42)),
-                        "alpha": float(dual_cfg.get("alpha", 0.5)),
-                        "beta": float(dual_cfg.get("beta", 0.5)),
-                    }
-                )
-                registry.log_metrics(eval_result.baseline_multiclass, prefix="baseline_")
-                registry.log_metrics(eval_result.hybrid_binary, prefix="hybrid_")
-                registry.log_metrics(eval_result.fusion_binary, prefix="fusion_")
-                registry.log_artifacts(results["artifacts"])
+            LOGGER.warning("MLflow logging is disabled in this build; skipping experiment tracking")
 
         LOGGER.info("Hybrid Phase 3 completed. Summary: %s", summary_path)
         return results

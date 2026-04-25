@@ -10,8 +10,12 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from src.registry.mlflow_registry import MLflowRegistry
 from src.registry.versioning import ModelVersionInfo, VersionManager
+
+try:
+    from src.registry.mlflow_registry import MLflowRegistry
+except Exception:  # pragma: no cover - optional dependency
+    MLflowRegistry = None
 
 LOGGER = logging.getLogger(__name__)
 
@@ -149,7 +153,7 @@ class ModelManager:
         manifest_path.write_text(json.dumps(decision.to_dict(), indent=2), encoding="utf-8")
         LOGGER.info("Wrote promotion manifest to %s", manifest_path)
 
-        if approved:
+        if approved and MLflowRegistry is not None:
             mlflow_cfg = self.config.get("mlflow", {})
             registry = MLflowRegistry(
                 tracking_uri=mlflow_cfg.get("tracking_uri", "file:./mlruns"),
@@ -171,5 +175,7 @@ class ModelManager:
                         "manifest": str(manifest_path),
                     }
                 )
+        elif approved:
+            LOGGER.warning("MLflow is not available; skipping promotion tracking logs")
 
         return decision
