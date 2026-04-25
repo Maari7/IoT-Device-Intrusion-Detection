@@ -182,20 +182,44 @@ def run_phase1(config: Dict, max_rows_per_file: int | None = None) -> Dict[str, 
 
     LOGGER.info("Loading merged dataset...")
     data = loader.load_dataset(max_rows_per_file=max_rows_per_file)
-    # 🔥 FILTER ONLY TARGET DEVICE (CRITICAL FIX)
-    TARGET_DEVICE = "Danmini_Doorbell"
-
-    if "family" in data.columns:
-        data = data[data["family"] == TARGET_DEVICE]
-    elif "source" in data.columns:
-        data = data[data["source"].str.contains(TARGET_DEVICE, na=False)]
+    # Prefer filtering by configured source column when device name is present in source paths.
+    target_device = Path(paths_cfg.get("dataset_root", "")).name
+    source_column = str(data_cfg.get("source_column", "source_file"))
+    if target_device and source_column in data.columns:
+        filtered = data[data[source_column].astype(str).str.contains(target_device, na=False)]
+        if not filtered.empty:
+            data = filtered
+        else:
+            LOGGER.warning("Source-based device filter produced no rows; proceeding without device filter")
     else:
-        print("WARNING: No device column found, skipping filter")
+        LOGGER.warning("No source column found for device filtering; proceeding without device filter")
+
+    # Force a bounded training set size to keep preprocessing/training runtime practical.
+    sample_cap = int(data_cfg.get("max_total_rows", 15000))
+    sample_size = min(sample_cap, len(data))
+    data = data.sample(n=sample_size, random_state=42)
 
     LOGGER.info(f"After filtering: {data.shape}")
 
     LOGGER.info("Validating loaded dataset...")
     validated = validator.validate(data)
+
+    # Optional feature cap to reduce downstream training/SHAP cost.
+    max_feature_columns = int(data_cfg.get("max_feature_columns", 30))
+    metadata_columns = [
+        str(data_cfg["label_column"]),
+        str(data_cfg["family_column"]),
+        str(data_cfg["source_column"]),
+    ]
+    feature_columns = [c for c in validated.columns if c not in metadata_columns and c != "label_id"]
+    if max_feature_columns > 0 and len(feature_columns) > max_feature_columns:
+        kept_features = feature_columns[:max_feature_columns]
+        validated = validated[kept_features + metadata_columns]
+        LOGGER.info(
+            "Applied feature cap: kept %d of %d feature columns",
+            len(kept_features),
+            len(feature_columns),
+        )
 
     report_path = processed_dir / "data_quality_report.json"
     validator.write_quality_report(validated, report_path)

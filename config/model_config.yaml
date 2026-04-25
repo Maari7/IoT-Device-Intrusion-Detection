@@ -8,9 +8,9 @@ mlflow:
 models:
   xgboost:
     params:
-      n_estimators: 300
-      max_depth: 8
-      learning_rate: 0.05
+      n_estimators: 50
+      max_depth: 4
+      learning_rate: 0.1
       subsample: 0.8
       colsample_bytree: 0.8
       reg_alpha: 0.0
@@ -19,8 +19,10 @@ models:
       tree_method: hist
       objective: multi:softprob
       eval_metric: mlogloss
+      early_stopping_rounds: 10
 
   shap_weighting:
+    sample_rows: 1000
     surrogate_params:
       n_estimators: 180
       max_depth: 6

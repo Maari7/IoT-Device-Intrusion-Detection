@@ -54,7 +54,13 @@ class HybridTrainingOrchestrator:
         """Converts multiclass IDs to binary anomaly targets."""
         return (y.to_numpy() != benign_label_id).astype(int)
 
-    def _train_xgboost(self, x_train: pd.DataFrame, y_train: pd.Series) -> XGBClassifier:
+    def _train_xgboost(
+        self,
+        x_train: pd.DataFrame,
+        y_train: pd.Series,
+        x_val: pd.DataFrame | None = None,
+        y_val: pd.Series | None = None,
+    ) -> XGBClassifier:
         """Trains baseline XGBoost multiclass model."""
         xgb_cfg = self.model_config["models"]["xgboost"]["params"]
         model = XGBClassifier(
@@ -69,9 +75,19 @@ class HybridTrainingOrchestrator:
             eval_metric=xgb_cfg.get("eval_metric", "mlogloss"),
             tree_method=xgb_cfg.get("tree_method", "hist"),
             n_jobs=int(xgb_cfg.get("n_jobs", -1)),
+            early_stopping_rounds=int(xgb_cfg.get("early_stopping_rounds", 0)) or None,
             random_state=int(self.config.get("project", {}).get("seed", 42)),
         )
-        model.fit(x_train, y_train)
+        early_stopping_rounds = int(xgb_cfg.get("early_stopping_rounds", 0))
+        if x_val is not None and y_val is not None and early_stopping_rounds > 0:
+            model.fit(
+                x_train,
+                y_train,
+                eval_set=[(x_val, y_val)],
+                verbose=False,
+            )
+        else:
+            model.fit(x_train, y_train)
         return model
 
     def _classifier_attack_score(self, clf: XGBClassifier, x: pd.DataFrame, benign_label_id: int) -> np.ndarray:
@@ -121,7 +137,12 @@ class HybridTrainingOrchestrator:
             baseline_clf = joblib.load(baseline_path)
         else:
             LOGGER.info("Training XGBoost...")
-            baseline_clf = self._train_xgboost(x_train=x_train, y_train=y_train)
+            baseline_clf = self._train_xgboost(
+                x_train=x_train,
+                y_train=y_train,
+                x_val=x_val,
+                y_val=y_val,
+            )
             joblib.dump(baseline_clf, baseline_path)
 
         if shap_path.exists():
@@ -132,9 +153,11 @@ class HybridTrainingOrchestrator:
             x_test_weighted = shap_generator.transform(x_test)
         else:
             LOGGER.info("Computing SHAP weights...")
+            shap_cfg = self.model_config["models"].get("shap_weighting", {})
             shap_generator = ShapWeightGenerator(
                 base_model=baseline_clf,
                 random_state=int(self.config.get("project", {}).get("seed", 42)),
+                sample_rows=int(shap_cfg.get("sample_rows", 1000)),
             )
             x_train_weighted = shap_generator.fit_transform(x_train)
             x_val_weighted = shap_generator.transform(x_val)
@@ -339,6 +362,7 @@ class HybridTrainingOrchestrator:
         shap_generator = ShapWeightGenerator(
             base_model=baseline_clf,
             random_state=int(self.config.get("project", {}).get("seed", 42)),
+            sample_rows=int(shap_cfg.get("sample_rows", 1000)),
         )
         x_train_weighted = shap_generator.fit_transform(x_train)
         x_test_weighted = shap_generator.transform(x_test)

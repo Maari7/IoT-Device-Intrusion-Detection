@@ -16,6 +16,8 @@ data:
   chunksize: 200000
   cache_enabled: true
   max_rows_per_file: null
+  max_total_rows: 15000
+  max_feature_columns: 30
   label_column: label
   family_column: attack_family
   source_column: source_file

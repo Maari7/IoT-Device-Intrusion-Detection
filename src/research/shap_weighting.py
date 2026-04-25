@@ -5,11 +5,10 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
 import numpy as np
 import pandas as pd
-from xgboost import XGBClassifier
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,9 +16,10 @@ LOGGER = logging.getLogger(__name__)
 class ShapWeightGenerator:
     """Builds SHAP-derived feature weights using a tree surrogate model."""
 
-    def __init__(self, base_model, random_state: int = 42) -> None:
+    def __init__(self, base_model, random_state: int = 42, sample_rows: int = 1000) -> None:
         self.base_model = base_model
         self.random_state = random_state
+        self.sample_rows = int(sample_rows)
         self.feature_names: List[str] = []
         self.feature_weights: pd.Series | None = None
 
@@ -54,7 +54,8 @@ class ShapWeightGenerator:
             return self
 
         explainer = shap.TreeExplainer(self.base_model)
-        shap_values = explainer.shap_values(x_train)
+        x_sample = x_train.sample(n=min(self.sample_rows, len(x_train)), random_state=self.random_state)
+        shap_values = explainer.shap_values(x_sample)
 
         if isinstance(shap_values, list):
             stacked = np.stack([np.abs(v) for v in shap_values], axis=0)
@@ -105,6 +106,7 @@ class ShapWeightGenerator:
             "feature_weights": {k: float(v) for k, v in self.feature_weights.to_dict().items()},
             "feature_names": self.feature_names,
             "random_state": self.random_state,
+            "sample_rows": self.sample_rows,
         }
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         LOGGER.info("Saved SHAP feature weights to %s", path)
@@ -114,7 +116,11 @@ class ShapWeightGenerator:
     def load(input_path: str | Path) -> "ShapWeightGenerator":
         """Loads saved SHAP weights from JSON."""
         payload = json.loads(Path(input_path).read_text(encoding="utf-8"))
-        instance = ShapWeightGenerator(xgb_params={}, random_state=int(payload.get("random_state", 42)))
+        instance = ShapWeightGenerator(
+            base_model=None,
+            random_state=int(payload.get("random_state", 42)),
+            sample_rows=int(payload.get("sample_rows", 1000)),
+        )
         feature_weights = payload["feature_weights"]
         instance.feature_weights = pd.Series(feature_weights, dtype="float64")
         instance.feature_names = list(payload.get("feature_names", instance.feature_weights.index.tolist()))
