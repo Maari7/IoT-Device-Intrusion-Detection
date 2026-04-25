@@ -42,6 +42,7 @@ cache/
 /data/
 !src/data/
 !src/data/**
+src/data/__pycache__/
 
 # DVC and local pipeline state
 .dvc/cache/
