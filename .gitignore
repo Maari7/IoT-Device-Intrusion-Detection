@@ -39,7 +39,9 @@ cache/
 
 # Data and generated datasets
 # Keep raw project data out of git unless explicitly needed.
-data/
+/data/
+!src/data/
+!src/data/**
 
 # DVC and local pipeline state
 .dvc/cache/
