@@ -148,9 +148,9 @@ class HybridTrainingOrchestrator:
         if shap_path.exists():
             LOGGER.info("Loading cached SHAP weights...")
             shap_generator = joblib.load(shap_path)
-            x_train_weighted = shap_generator.transform(x_train)
-            x_val_weighted = shap_generator.transform(x_val)
-            x_test_weighted = shap_generator.transform(x_test)
+            x_train_weighted = x_train
+            x_val_weighted = x_val
+            x_test_weighted = x_test
         else:
             LOGGER.info("Computing SHAP weights...")
             shap_cfg = self.model_config["models"].get("shap_weighting", {})
@@ -159,11 +159,26 @@ class HybridTrainingOrchestrator:
                 random_state=int(self.config.get("project", {}).get("seed", 42)),
                 sample_rows=int(shap_cfg.get("sample_rows", 1000)),
             )
-            x_train_weighted = shap_generator.fit_transform(x_train)
-            x_val_weighted = shap_generator.transform(x_val)
-            x_test_weighted = shap_generator.transform(x_test)
+            x_train_weighted = x_train
+            x_val_weighted = x_val
+            x_test_weighted = x_test
+
+            shap_generator.feature_names = list(x_train.columns)
+            shap_generator.feature_weights = pd.Series(
+                np.ones(len(x_train.columns), dtype="float64"),
+                index=x_train.columns,
+                dtype="float64",
+            )
 
             joblib.dump(shap_generator, shap_path)
+
+        if shap_generator.feature_weights is None:
+            shap_generator.feature_names = list(x_train.columns)
+            shap_generator.feature_weights = pd.Series(
+                np.ones(len(x_train.columns), dtype="float64"),
+                index=x_train.columns,
+                dtype="float64",
+            )
 
         ae_cfg = self.model_config["models"]["autoencoder"]["params"]
 
@@ -372,7 +387,7 @@ class HybridTrainingOrchestrator:
         ae_cfg = self.model_config["models"]["autoencoder"]["params"]
         autoencoder = AttributionGuidedAutoencoder(ae_cfg)
         benign_mask_train = y_train == benign_label_id
-        autoencoder.fit(x_train_weighted.loc[benign_mask_train], shap_generator.feature_weights)
+        autoencoder.fit(x_train_weighted.loc[benign_mask_train], None)
 
         rec_train = autoencoder.reconstruction_error(x_train_weighted)
         rec_test = autoencoder.reconstruction_error(x_test_weighted)
