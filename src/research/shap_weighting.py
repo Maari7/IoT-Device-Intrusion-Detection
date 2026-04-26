@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import List
 
+import joblib
 import numpy as np
 import pandas as pd
 
@@ -53,8 +54,22 @@ class ShapWeightGenerator:
             LOGGER.info("Computed fallback feature weights for %d features", len(self.feature_weights))
             return self
 
+        # 🔥 LOAD FIXED FEATURE LIST
+        feature_path = Path("artifacts/selected_features.joblib")
+        if feature_path.exists():
+            selected_features = joblib.load(feature_path)
+            selected_features = [col for col in selected_features if col in x_train.columns]
+            if not selected_features:
+                raise ValueError("No selected features found in current training frame")
+            x_train = x_train[selected_features]
+            LOGGER.info("Loaded fixed feature set: %d", len(selected_features))
+
+        # Keep only numeric columns and fill gaps before SHAP.
+        x_train = x_train.select_dtypes(include=[np.number]).fillna(0)
+
         explainer = shap.TreeExplainer(self.base_model)
         x_sample = x_train.sample(n=min(self.sample_rows, len(x_train)), random_state=self.random_state)
+        x_sample = x_sample.select_dtypes(include=[np.number]).fillna(0)
         shap_values = explainer.shap_values(x_sample)
 
         if isinstance(shap_values, list):

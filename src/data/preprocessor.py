@@ -215,6 +215,13 @@ def run_phase1(config: Dict, max_rows_per_file: int | None = None) -> Dict[str, 
     if max_feature_columns > 0 and len(feature_columns) > max_feature_columns:
         kept_features = feature_columns[:max_feature_columns]
         validated = validated[kept_features + metadata_columns]
+
+        # 🔥 SAVE FEATURE LIST (CRITICAL FIX)
+        feature_path = Path("artifacts/selected_features.joblib")
+        feature_path.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(kept_features, feature_path)
+
+        LOGGER.info(f"Saved selected features: {len(kept_features)}")
         LOGGER.info(
             "Applied feature cap: kept %d of %d feature columns",
             len(kept_features),
