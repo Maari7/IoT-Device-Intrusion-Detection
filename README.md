@@ -2,6 +2,51 @@
 
 Hybrid Explainable Intrusion Detection for IoT Botnet Traffic
 
+## IoT Device Intrusion Detection using Hybrid ML
+
+### Overview
+This project detects IoT network attacks (Mirai, Gafgyt) using a hybrid ML approach combining:
+- XGBoost (supervised learning)
+- Autoencoder (anomaly detection)
+- Fusion model (final decision layer)
+
+### Dataset
+Dataset used: Danmini Doorbell IoT dataset
+Stored externally in Google Drive.
+
+### Setup Instructions
+
+#### 1. Clone repository
+git clone https://github.com/your-username/IoT-Device-Intrusion-Detection.git
+cd IoT-Device-Intrusion-Detection
+
+#### 2. Install dependencies
+pip install -r requirements.txt
+
+#### 3. Link dataset
+Place dataset in:
+data/Danmini_Doorbell/
+
+Or update config path accordingly.
+
+#### 4. Run pipeline
+python scripts/run_pipeline.py build --profile quick --run-name final_run
+
+#### 5. Results
+Outputs:
+- Metrics
+- Model artifacts
+- Evaluation reports
+
+### Model Performance
+- Accuracy: 0.9995
+- F1 Score: 0.9997
+- AUROC: 1.0
+
+### Notebook
+Refer to:
+notebooks/final_notebook.ipynb
+
 ## 1) Executive Summary
 
 This project implements an end-to-end, research-oriented and production-aware Intrusion Detection System (IDS) pipeline for IoT botnet detection using the N-BaIoT style Doorbell device traffic (benign + Gafgyt + Mirai families).
