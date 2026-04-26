@@ -504,6 +504,80 @@ If used for academic submission, cite:
 - XGBoost method reference
 - Any additional libraries or baseline methods used in your comparative analysis
 
+## 20) GitHub Publishing + Reproducibility Quickstart
+
+This section is the practical checklist for publishing the project and allowing others to recreate your results.
+
+### A. Public repository URL (for report)
+
+Use this line in your final report and replace with your live URL:
+- Public GitHub repository URL: `<PASTE_PUBLIC_REPO_URL_HERE>`
+
+Example:
+- Public GitHub repository URL: `https://github.com/<username>/<repo-name>`
+
+### B. What is tracked vs ignored in this repository
+
+Data policy used in this repository:
+- Tracked under data: only `data/schema/` (source schema definitions)
+- Ignored under data: generated/raw/large runtime files
+
+Important:
+- If you accidentally commit large data files (`.csv`, `.npy`, etc.), GitHub push will fail due to the 100MB limit.
+- Keep data artifacts out of git history unless you intentionally use Git LFS.
+
+### C. First-time push workflow (Windows)
+
+1. Check current remote
+- `git remote -v`
+
+2. Ensure branch name
+- `git branch -M main`
+
+3. Commit source code and docs
+- `git add .`
+- `git commit -m "Initial project publication"`
+
+4. Push
+- `git push -u origin main`
+
+If push fails with permission error (`403`):
+- Sign out/in with the correct GitHub account
+- Update `origin` to the correct repository URL if needed
+
+If push fails with large-file error:
+- Remove large files from commits/history before pushing
+- Re-push with `git push --force-with-lease` only after history cleanup
+
+### D. Recreate project on a fresh machine
+
+1. Clone
+- `git clone <PUBLIC_REPO_URL>`
+- `cd <repo-folder>`
+
+2. Create environment
+- `python -m venv venv`
+- `.\venv\Scripts\Activate.ps1`
+
+3. Install dependencies
+- `pip install -r requirements.txt`
+
+4. Build artifacts
+- `python scripts/run_pipeline.py build --profile full --run-name final_build`
+
+5. (Optional) Serve API
+- `python scripts/run_pipeline.py serve`
+
+### E. Minimal reproducibility evidence to include in report
+
+Include paths/output references for:
+- `artifacts/research/reports/exp1_results.json`
+- `artifacts/research/reports/exp2_loao_results.json`
+- `artifacts/research/reports/phase3_hybrid_report.md`
+- `artifacts/research/orchestration/automation_report.json`
+
+This demonstrates that another user can reproduce the build and obtain the same report artifacts using documented commands.
+
 ---
 
 For day-to-day usage, use scripts/run_pipeline.py as the primary interface. For rigorous ablation and thesis reporting, use experiments/exp1_ae_vs_baseline.py and experiments/exp2_loao.py plus the generated JSON/markdown artifacts.
