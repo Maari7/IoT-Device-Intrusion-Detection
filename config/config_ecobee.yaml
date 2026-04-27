@@ -8,6 +8,9 @@ paths:
   attack_dirs:
     - data/Ecobee_Thermostat/gafgyt_attacks
     - data/Ecobee_Thermostat/mirai_attacks
+  raw_cache: data/raw/combined_raw.parquet
+  processed_dir: data/processed_ecobee
+  features_dir: data/features_ecobee
 
 data:
   chunksize: 50000
