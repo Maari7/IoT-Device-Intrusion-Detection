@@ -3,12 +3,14 @@ project:
   seed: 42
 
 paths:
-  dataset_root: data/Ecobee_Thermostat
-  benign_file: data/Ecobee_Thermostat/benign_traffic.csv
+  dataset_root: /content/drive/MyDrive/IoT_Data/Ecobee_Thermostat
+  benign_file: /content/drive/MyDrive/IoT_Data/Ecobee_Thermostat/benign_traffic.csv
   attack_dirs:
-    - data/Ecobee_Thermostat/gafgyt_attacks
-    - data/Ecobee_Thermostat/mirai_attacks
-  raw_cache: data/raw/combined_raw.parquet
+    - /content/drive/MyDrive/IoT_Data/Ecobee_Thermostat/gafgyt_attacks
+    - /content/drive/MyDrive/IoT_Data/Ecobee_Thermostat/mirai_attacks
+
+  # 🔥 THESE ARE MANDATORY (missing in your config)
+  raw_cache: data/raw/combined_raw_ecobee.parquet
   processed_dir: data/processed_ecobee
   features_dir: data/features_ecobee
 
