@@ -14,7 +14,7 @@ paths:
 
 data:
   chunksize: 50000
-  cache_enabled: true
+  cache_enabled: false
   max_rows_per_file: null
   max_total_rows: 10000
   max_feature_columns: 25
